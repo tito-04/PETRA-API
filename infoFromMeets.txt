@@ -1,0 +1,67 @@
+Info gathered from previous meetings in relation to PETRA API.
+
+MEETING 121 -------------------------------------
+
+Dean Bogdanovic: Fully support providing APIs that can help traffic
+engineering; please keep it simple; don't talk about carbon
+optimization; we have no way to know the carbon intensity of the power
+at the moment; we change carbon footprints of power on the fly; some of
+this happens out of band in analog ways (like phone calls); it will not
+be so precise to determine the green-ness of energy
+
+Srihari Sangli: Paths change dynamically; is it even feasible to compute
+power consumption by path and keep it accurate?
+
+Alberto: We hope so, but this is to be explored
+
+Key aspects: Keep it simple, the api is envisioned to be used in SD-WAN to act as a mediator between the overlay network and underlay network so that the overlay network knows about the energy consumption of the underlay network, from that different scenarios such as acting on that information to decide a path can be taken. Another scenario is connecting L3 to L1... Is it even possible to compute power consumption by path, because paths change dinamycally.
+
+
+MEETING 123 ----------------------------------------------
+
+Diego: Can this be generalized to a general querying API for path information? Not just focussed on the radio.
+
+Alberto: Addressing a challenge that we have seen? Is this in scope for GREEN?
+
+Rob: We need to check with Mahesh, because this work seems to be at the edge of GREEN scope
+
+Benoît (chat): Just very quickly browsed draft-petra-green-api. I understand Diego’s question. Isn’t it a generic north bound API, use case specific. A kind of “abstractions” if I want to speak the ONIONS language? Are those use case specific APIs in scope? If yes, were do we stop?
+
+Marisol Palmero (chat): My understanding is that if we consider under use cases end to end use cases, like video streaming, we should consider such an API to understand the energy from the E2E (for instance, optical path + IP )
+
+Rob(chat): Marisol, I think that I agree. The question I have is whether this should be covered by a core model in the first phase, or if this is a more advanced solution that should follow on afterwards?
+
+Marisol Palmero(chat): that point I agree, I think it should be part of GREEN even if this is postponed
+
+Diego (chat): That was my idea when I asked Alberto
+
+The API is agnostic to the underlay infrastructure
+
+
+MEETING 124 --------------------------------------------------------------------
+
+Consider other endpoints other than ip addresses end points.
+May be too son to incorporate with the green framework.
+To be for the consumer not only corporative.
+Clarification on where does PETRA act in the GREEN Framework.
+
+Rob: Are you looking for adoption?
+
+    Luis: Not yet. We could wait till the core model consolidates
+    Med: The work can progress, including the alignment with the core model
+    Luis/Rob: This is the intent
+
+Diego: Please elaborate on the choice of units
+
+    Luis: Based on the kind of use cases we are considering, but open to how the core model evolves, and willing to contribute to the discussion on units
+    
+    
+    
+    
+Notes about framework
+
+Most devices have limited (and proprietary) capabilities for monitoring purposes. The framework aims to define requirements to enhance these capabilities, enabling standardized metric production and meaningful data contributions for energy management goals as well as integration across different devices. These devices can be routers, switches, storage systems and its components, power sources such as powers supplies, etc... . Theres is 3 layers to the framework the Device/Component layers where the power that is to be monitored is at, and where the controller will control the power consumption and apply energy saving functionalities. The Controller layer where metrics are collected, computed and aggregated, this layers communincates with the bottom layer(Device/Component) to receive data and control the power consumption, it also communicates with the top layer (Network Domain Level) providing metrics about the power usage in the network, trough an api for example the PETRA API. The monitoring interface monitor more than energy and power but that is out of the scope.
+
+The framework suggests using a push-based telemetry where the devices push metrics to the energy management systems instead of waiting for a poll. The energy management function might be implemented inside the device
+
+
