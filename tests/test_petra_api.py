@@ -11,6 +11,8 @@ Two test modes:
     data-source = "live".
 """
 
+import asyncio
+import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -26,6 +28,36 @@ class TestHealthEndpoint:
         r = client.get("/health")
         assert r.status_code == 200
         assert r.json()["status"] == "ok"
+
+
+class TestMetricsEndpoint:
+    def test_metrics_ok(self):
+        r = client.get("/metrics")
+        assert r.status_code == 200
+        assert "petra_last_query_watts_per_gigabit" in r.text
+
+
+class TestEnergyQueryCache:
+    def _post(self, src_ip: str, dst_ip: str, throughput: float) -> dict:
+        return client.post(
+            "/restconf/operations/energy/query",
+            json={"input": {"src-ip": src_ip, "dst-ip": dst_ip, "throughput": throughput}},
+        )
+
+    def test_cache_snapshot_used(self, monkeypatch):
+        from src.mock.topology import ROUTERS
+        from src.petra.adapters.dummy import build_dummy_snapshot
+        from src.petra.cache import clear_snapshot, update_snapshot
+        from src.petra import config
+
+        snapshot = build_dummy_snapshot(list(ROUTERS.keys()), timestamp=time.time())
+        asyncio.run(update_snapshot(snapshot))
+        monkeypatch.setattr(config, "CACHE_MAX_AGE_SECONDS", 60.0)
+
+        r = self._post("10.0.1.1", "10.0.6.1", 10.0)
+        assert r.json()["output"]["success"]["data-source"] == "dummy"
+
+        asyncio.run(clear_snapshot())
 
 
 class TestEnergyQuery:

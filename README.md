@@ -105,6 +105,39 @@ python -m src.mock.device_server
 ```bash
 source .venv/bin/activate
 python -m src.petra.server
+
+---
+
+## Observability (Prometheus + Grafana)
+
+PETRA exposes Prometheus metrics at `/metrics`. A docker-compose setup is provided
+under [ops/docker-compose.yml](ops/docker-compose.yml).
+
+### Quickstart (Docker)
+
+From the repo root:
+
+```bash
+docker compose -f ops/docker-compose.yml up -d
+```
+
+Prometheus will scrape the API at `http://localhost:8003/metrics` (configured in
+[ops/prometheus.yml](ops/prometheus.yml)). Grafana is available at:
+
+- http://localhost:3000 (default login: admin / admin)
+
+Add a Prometheus datasource in Grafana with URL:
+
+```
+http://prometheus:9090
+```
+
+### Grafana dashboard
+
+Grafana is auto-provisioned with a PETRA dashboard via docker-compose.
+The dashboard JSON lives at [ops/grafana/dashboards/petra-dashboard.json](ops/grafana/dashboards/petra-dashboard.json).
+
+If you prefer manual import, you can still use [ops/grafana-dashboard.json](ops/grafana-dashboard.json).
 ```
 
 ---
