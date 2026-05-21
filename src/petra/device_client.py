@@ -1,14 +1,14 @@
 """
-Device Client — fetches ietf-power-and-energy data from the mock device
-server for a single router.
+Device Client — fetches ietf-power-and-energy data from the testbed
+device endpoint for a single router.
 
-Uses httpx async so the PETRA server can query all path routers
+Uses httpx async so the PETRA server can query all path devices
 concurrently with asyncio.gather().
 """
 
 import httpx
 
-# Base URL of the mock device server (override in tests via DEVICE_SERVER_URL)
+# Base URL of the device endpoint (override in tests via DEVICE_SERVER_URL)
 DEVICE_SERVER_URL = "http://localhost:8002"
 
 _RESTCONF_PATH = "/restconf/data/ietf-power-and-energy:energy-objects/{device_id}"
@@ -24,7 +24,7 @@ async def get_energy(
     base_url: str = DEVICE_SERVER_URL,
 ) -> dict:
     """
-    Query the mock device server for *device_id* and return a normalised
+    Query the device endpoint for *device_id* and return a normalised
     dict with keys:
         instantaneous_power  (float, Watts)
         capacity_gbps        (float, Gbps)   — from topology, injected below
@@ -41,7 +41,7 @@ async def get_energy(
             raise DeviceClientError(f"Cannot reach device server: {exc}") from exc
 
     if response.status_code == 404:
-        raise DeviceClientError(f"Device '{device_id}' not found on mock server")
+        raise DeviceClientError(f"Device '{device_id}' not found on device endpoint")
     if response.status_code != 200:
         raise DeviceClientError(
             f"Device server returned {response.status_code} for '{device_id}'"

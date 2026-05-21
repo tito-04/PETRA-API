@@ -101,7 +101,7 @@ async def energy_query(body: QueryRequest) -> JSONResponse:
         )
 
     # ── Query each device on the path concurrently via RESTCONF ────────────────
-    # Primary path: fetch live instantaneous_power from the mock device server
+    # Primary path: fetch live instantaneous_power from the SNMP/PDU sources
     # and use those values to compute watts-per-gigabit.
     # Fallback: if the device server is unreachable, derive power from the
     # topology model (baseline + load formula).

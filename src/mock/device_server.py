@@ -1,5 +1,5 @@
 """
-Mock Device Server — simulates network routers exposing energy data
+Legacy Test Device Server — simulates network routers exposing energy data
 via a RESTCONF-like REST API on port 8002.
 
 Endpoint:
@@ -35,7 +35,7 @@ from fastapi.responses import JSONResponse
 
 from src.mock.topology import ROUTERS
 
-app = FastAPI(title="Mock Device Server", version="1.0.0")
+app = FastAPI(title="Legacy Test Device Server", version="1.0.0")
 
 # Each router keeps a running total of energy consumed (Wh), incremented
 # on every request to simulate a real cumulative counter.

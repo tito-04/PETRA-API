@@ -14,7 +14,7 @@ measurement, using the identity hierarchy defined in `ietf-power-and-energy.yang
 
 ```
 ┌──────────────────────────────────────┐
-│          PETRA Server  :8000         │  ← POST /restconf/operations/energy/query
+│          PETRA Server  :8003         │  ← POST /restconf/operations/energy/query
 │  src/petra/server.py                 │
 │  ┌───────────────┐ ┌───────────────┐ │
 │  │ path_resolver │ │device_client  │ │
@@ -23,7 +23,7 @@ measurement, using the identity hierarchy defined in `ietf-power-and-energy.yang
 └─────────────────────────── │ ────────┘
                              │ RESTCONF GET (per router on path)
 ┌────────────────────────────▼─────────┐
-│        Mock Device Server  :8002     │  ← GET /restconf/data/ietf-power-and-energy:...
+│    Legacy Test Device Server  :8002  │  ← GET /restconf/data/ietf-power-and-energy:...
 │  src/mock/device_server.py           │
 │  Simulates 6 routers (R1–R6)         │
 │  Returns YANG-compliant energy data  │
@@ -35,13 +35,13 @@ measurement, using the identity hierarchy defined in `ietf-power-and-energy.yang
 | File | Responsibility |
 |---|---|
 | `src/mock/topology.py` | Defines the 6-router grid topology (NetworkX graph, IP prefixes, energy attributes) |
-| `src/mock/device_server.py` | Mock RESTCONF server — returns `ietf-power-and-energy` data per device |
+| `src/mock/device_server.py` | Legacy RESTCONF test server — returns `ietf-power-and-energy` data per device |
 | `src/petra/path_resolver.py` | Resolves src/dst IP addresses to a list of router IDs (shortest path) |
-| `src/petra/device_client.py` | Async HTTP client — fetches live energy readings from the mock device server |
+| `src/petra/device_client.py` | Async HTTP client — fetches live energy readings from the testbed device endpoints |
 | `src/petra/energy_calculator.py` | Aggregates per-device readings into the watts-per-gigabit metric |
 | `src/petra/server.py` | Main PETRA API server |
 
-### Network topology (mock)
+### Network topology (reference, tests only)
 
 ```
 R1 (10.0.1.0/24) --- R2 (10.0.2.0/24) --- R3 (10.0.3.0/24)
@@ -93,18 +93,19 @@ pip install -r requirements.txt
 
 Both servers must be running simultaneously. Open **two terminals**.
 
-### Terminal 1 — Mock Device Server (port 8002)
+### Terminal 1 — Legacy Test Device Server (port 8002)
 
 ```bash
 source .venv/bin/activate
 python -m src.mock.device_server
 ```
 
-### Terminal 2 — PETRA API Server (port 8000)
+### Terminal 2 — PETRA API Server (port 8003)
 
 ```bash
 source .venv/bin/activate
 python -m src.petra.server
+```
 
 ---
 
@@ -146,15 +147,15 @@ If you prefer manual import, you can still use [ops/grafana-dashboard.json](ops/
 
 ### Swagger UI (recommended)
 
-Open [http://localhost:8000/docs](http://localhost:8000/docs) in a browser.
+Open [http://localhost:8003/docs](http://localhost:8003/docs) in a browser.
 Use the `POST /restconf/operations/energy/query` endpoint with the form provided.
 
 Example request body:
 ```json
 {
   "input": {
-    "src-ip": "10.0.1.1",
-    "dst-ip": "10.0.6.1",
+    "src-ip": "10.255.35.93",
+    "dst-ip": "10.255.35.34",
     "throughput": 10.0
   }
 }
@@ -163,35 +164,35 @@ Example request body:
 ### curl
 
 ```bash
-curl -s -X POST http://localhost:8000/restconf/operations/energy/query \
+curl -s -X POST http://localhost:8003/restconf/operations/energy/query \
   -H "Content-Type: application/yang-data+json" \
-  -d '{"input": {"src-ip": "10.0.1.1", "dst-ip": "10.0.6.1", "throughput": 10.0}}' \
+  -d '{"input": {"src-ip": "10.255.35.93", "dst-ip": "10.255.35.34", "throughput": 10.0}}' \
   | python3 -m json.tool
 ```
 
-Example response (live data from mock device server):
+Example response (live data from the testbed):
 ```json
 {
   "output": {
     "success": {
-      "watts-per-gigabit": 42.317,
+      "watts-per-gigabit": 14.0,
       "data-source-accuracy": "ietf-power-and-energy:accuracy-measured-bronze",
-      "path": ["R1", "R2", "R5", "R6"],
+      "path": ["exigence1", "switch", "exigence2"],
       "data-source": "live"
     }
   }
 }
 ```
 
-If the mock device server is not running, the PETRA server falls back to the topology
+If the SNMP sources are not reachable, the PETRA server falls back to the dummy/topology
 model and returns `"data-source": "topology-model"`.
 
 ### Invalid address
 
 ```bash
-curl -s -X POST http://localhost:8000/restconf/operations/energy/query \
+curl -s -X POST http://localhost:8003/restconf/operations/energy/query \
   -H "Content-Type: application/yang-data+json" \
-  -d '{"input": {"src-ip": "1.2.3.4", "dst-ip": "10.0.6.1", "throughput": 10.0}}'
+  -d '{"input": {"src-ip": "1.2.3.4", "dst-ip": "10.255.35.34", "throughput": 10.0}}'
 ```
 
 Response:
@@ -202,16 +203,16 @@ Response:
 ### Health checks
 
 ```bash
-curl http://localhost:8000/health   # PETRA server
-curl http://localhost:8002/health   # Mock device server
+curl http://localhost:8003/health   # PETRA server
+curl http://localhost:8002/health   # Legacy test device server
 ```
 
 ---
 
 ## Running the tests
 
-With the virtual environment active (device server does **not** need to be running —
-tests use mocks internally):
+With the virtual environment active (the legacy test device server does **not** need
+to be running — tests use mocked dependencies internally):
 
 ```bash
 python -m pytest tests/ -v
@@ -230,7 +231,7 @@ Expected: **48 passed**.
 | `watts-per-gigabit` | `decimal64 {fraction-digits 3}` | `round(wpg, 3)` ✅ |
 | `data-source-accuracy` | `identityref` (least accurate on path) | `_accuracy_rank()` picks worst ✅ |
 
-> **Known deviations (low priority, intentional for the mock):**
+> **Known deviations (low priority, intentional for the testbed fallback):**
 > - `source-component-id` is a free string instead of a leafref to `ietf-hardware`
 > - `path` and `data-source` fields in the success response are extensions not present in the YANG schema (useful for debugging)
-> - Accuracy levels are limited to bronze/silver/gold (red and ones not used in the mock topology)
+> - Accuracy levels are limited to bronze/silver/gold (red and ones not used in the reference topology)
